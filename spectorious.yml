@@ -1,0 +1,7 @@
+---
+- hosts: spectorious
+  gather_facts: false
+
+
+  roles:
+    - role: spectorious_role

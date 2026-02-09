@@ -1,0 +1,21 @@
+clickhouse_server: "172.20.1.170"
+clickhouse_password: "Rdas6510!"
+
+mongodb_server: "172.17.0.3"
+mongodb_password: "12345"
+
+mpop_mongodb_server: "172.20.2.200"
+mpop_mongodb_password: "Rdas6510!"
+
+repo_url: "git@github.com:secunity/spectorious.git"
+repo_dest: /root/work/spectorious
+
+Spectorious_branch: "master"
+
+
+base_dir: /data/spectorious
+work_dir: "{{ base_dir }}/work"
+
+goflow_logs_dir: /mnt/volumes/goflow2_logs/_data
+
+setup_sh_dest: "{{ repo_dest }}/setup.sh"
