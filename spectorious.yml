@@ -2,7 +2,12 @@
 - hosts: spectorious
   vars_files:
     - vars.yml
+
   tasks:
+    - name: Stash local changes if any exist
+      ansible.builtin.shell: git stash 
+      args:
+        chdir: "{{ repo_dest }}"
 
     - name: Clone/Update Spectorious repository
       ansible.builtin.git:
@@ -16,7 +21,7 @@
     - name: Execute setup.sh script
       shell: ./setup.sh "{{ clickhouse_server }}" "{{ clickhouse_password }}" "{{ mongodb_server }}" "{{ mongodb_password }}" "{{ mpop_mongodb_server }}" "{{ mpop_mongodb_password }}"
       args:
-        chdir: "{{ ansible_env.HOME }}/work/specorius"
+        chdir: "{{ repo_dest }}"
       register: script_output
 
     - name: Display script output
