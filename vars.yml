@@ -1,2 +1,2 @@
 repo_url: "git@github.com:secunity/spectorious.git"
-repo_dest: "{{ ansible_env.HOME }}/work/specorius"
+repo_dest: "{{ ansible_env.HOME }}/work/spectorious"
