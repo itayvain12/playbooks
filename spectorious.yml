@@ -5,7 +5,7 @@
 
   tasks:
     - name: Stash local changes if any exist
-      ansible.builtin.shell: git stash --include-untracked
+      ansible.builtin.shell: git stash 
       args:
         chdir: "{{ repo_dest }}"
 
@@ -28,3 +28,4 @@
       debug:
 
         msg: "{{ script_output.stdout_lines }}"
+
