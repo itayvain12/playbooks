@@ -20,7 +20,7 @@
       ansible.builtin.git:
         repo: "{{ repo_url }}"
         dest: "{{ repo_dest }}"
-        version: "{{ branch }}"
+        version: "{{ branch | default('master') }}"
         accept_hostkey: yes
         update: yes
         key_file: "{{ ansible_env.HOME }}/.ssh/id_ed25519"
@@ -41,3 +41,4 @@
     - name: Display script output
       ansible.builtin.debug:
         msg: "{{ script_output.stdout_lines }}"
+
