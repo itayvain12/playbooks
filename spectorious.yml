@@ -4,10 +4,17 @@
     - vars.yml
 
   tasks:
-    - name: Stash local changes if any exist
-      ansible.builtin.shell: git stash 
+
+    - name: Check if repository directory exists
+      ansible.builtin.stat:
+        path: "{{ repo_dest }}/.git"
+      register: repo_check
+
+    - name: Stash local changes if repo exists
+      ansible.builtin.shell: git stash
       args:
         chdir: "{{ repo_dest }}"
+      when: repo_check.stat.exists
 
     - name: Clone/Update Spectorious repository
       ansible.builtin.git:
@@ -15,18 +22,22 @@
         dest: "{{ repo_dest }}"
         version: "{{ branch }}"
         accept_hostkey: yes
-        update : yes
+        update: yes
         key_file: "{{ ansible_env.HOME }}/.ssh/id_ed25519"
 
     - name: Execute setup.sh script
-      shell: ./setup.sh "{{ clickhouse_server }}" "{{ clickhouse_password }}" "{{ mongodb_server }}" "{{ mongodb_password }}" "{{ mpop_mongodb_server }}" "{{ mpop_mongodb_password }}"
+      ansible.builtin.shell: >
+        ./setup.sh
+        "{{ clickhouse_server }}"
+        "{{ clickhouse_password }}"
+        "{{ mongodb_server }}"
+        "{{ mongodb_password }}"
+        "{{ mpop_mongodb_server }}"
+        "{{ mpop_mongodb_password }}"
       args:
         chdir: "{{ repo_dest }}"
       register: script_output
 
     - name: Display script output
-      debug:
+      ansible.builtin.debug:
         msg: "{{ script_output.stdout_lines }}"
-
-
-
