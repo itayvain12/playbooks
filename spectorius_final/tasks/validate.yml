@@ -1,0 +1,35 @@
+---
+# tasks/validate.yml
+# Preflight checks — fail fast before touching anything on the host.
+
+- name: Validate required connection variables are provided
+  ansible.builtin.fail:
+    msg: >
+      One or more required variables are missing or empty.
+      Re-run with:
+        ansible-playbook playbook.yml -e
+          "clickhouse_server=<...>
+           clickhouse_password=<...>
+           mongodb_server=<...>
+           mongodb_password=<...>
+           mpop_mongodb_server=<...>
+           mpop_mongodb_password=<...>"
+  when: >
+    clickhouse_server    is not defined or clickhouse_server    | length == 0 or
+    clickhouse_password  is not defined or clickhouse_password  | length == 0 or
+    mongodb_server       is not defined or mongodb_server       | length == 0 or
+    mongodb_password     is not defined or mongodb_password     | length == 0 or
+    mpop_mongodb_server  is not defined or mpop_mongodb_server  | length == 0 or
+    mpop_mongodb_password is not defined or mpop_mongodb_password | length == 0
+
+- name: Check SSH private key exists
+  ansible.builtin.stat:
+    path: "{{ private_key_file }}"
+  register: private_key_stat
+
+- name: Fail if SSH private key is missing
+  ansible.builtin.fail:
+    msg: >
+      Private key {{ private_key_file }} does not exist.
+      Please ensure the file is present and has correct permissions.
+  when: not private_key_stat.stat.exists

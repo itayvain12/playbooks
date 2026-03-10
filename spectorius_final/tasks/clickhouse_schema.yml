@@ -1,0 +1,79 @@
+---
+# tasks/clickhouse_schema.yml
+# Create the flow2 database and all required tables and views in ClickHouse.
+# Non-fatal: failures are collected and reported as a summary at the end.
+
+- name: Create flow2 database in ClickHouse
+  ansible.builtin.command: >
+    clickhouse-client
+      --host {{ clickhouse_server }}
+      --password {{ clickhouse_password }}
+      -q "CREATE DATABASE IF NOT EXISTS flow2"
+  register: db_creation
+  failed_when: false
+  changed_when: false
+
+- name: Show database creation result
+  ansible.builtin.debug:
+    msg: >-
+      [DATABASE] {{ 'OK' if db_creation.rc == 0 else 'FAILED' }} - flow2
+      {% if db_creation.rc != 0 %}
+      | Reason: {{ db_creation.stderr | default('No error output') }}
+      {% endif %}
+
+- name: Create ClickHouse tables
+  ansible.builtin.command: >
+    clickhouse-client
+      --host {{ clickhouse_server }}
+      --password {{ clickhouse_password }}
+      --queries-file {{ item }}
+  loop: "{{ flow2_tables }}"
+  register: table_creation
+  failed_when: false
+  changed_when: false
+  loop_control:
+    pause: 1
+
+- name: Show table creation results
+  ansible.builtin.debug:
+    msg: >-
+      [TABLE] {{ 'OK' if item.rc == 0 else 'FAILED' }} - {{ item.item | basename }}
+      {% if item.rc != 0 %}
+      | Reason: {{ item.stderr | default('No error output') }}
+      {% endif %}
+  loop: "{{ table_creation.results }}"
+  loop_control:
+    label: "{{ item.item | basename }}"
+
+- name: Create ClickHouse views
+  ansible.builtin.command: >
+    clickhouse-client
+      --host {{ clickhouse_server }}
+      --password {{ clickhouse_password }}
+      --queries-file {{ item }}
+  loop: "{{ flow2_views }}"
+  register: view_creation
+  failed_when: false
+  changed_when: false
+  loop_control:
+    pause: 1
+
+- name: Show view creation results
+  ansible.builtin.debug:
+    msg: >-
+      [VIEW] {{ 'OK' if item.rc == 0 else 'FAILED' }} - {{ item.item | basename }}
+      {% if item.rc != 0 %}
+      | Reason: {{ item.stderr | default('No error output') }}
+      {% endif %}
+  loop: "{{ view_creation.results }}"
+  loop_control:
+    label: "{{ item.item | basename }}"
+
+- name: Schema creation summary
+  ansible.builtin.debug:
+    msg:
+      - "Database : {{ 'SUCCESS' if db_creation.rc == 0 else 'FAILED (exit: ' ~ db_creation.rc ~ ')' }}"
+      - "Tables   : {{ table_creation.results | selectattr('rc','equalto',0) | list | length }}/{{ flow2_tables | length }} OK"
+      - "Views    : {{ view_creation.results  | selectattr('rc','equalto',0) | list | length }}/{{ flow2_views  | length }} OK"
+      - "Failed tables : {{ (table_creation.results | selectattr('rc','ne',0) | map(attribute='item') | map('basename') | list) | join(', ') or 'None' }}"
+      - "Failed views  : {{ (view_creation.results  | selectattr('rc','ne',0) | map(attribute='item') | map('basename') | list) | join(', ') or 'None' }}"

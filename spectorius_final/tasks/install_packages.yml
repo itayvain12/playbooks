@@ -1,0 +1,71 @@
+---
+# tasks/install_packages.yml
+# Add external APT repositories and install all required system packages.
+
+- name: Add APT signing keys from Ubuntu keyserver
+  become: true
+  ansible.builtin.apt_key:
+    keyserver: "{{ item.keyserver }}"
+    id: "{{ item.id }}"
+  loop:
+    - { keyserver: "keyserver.ubuntu.com",          id: "E0C56BD4" }          # ClickHouse
+    - { keyserver: "hkp://keyserver.ubuntu.com:80", id: "656408E390CFB1F5" }  # MongoDB
+
+- name: Add APT repositories for ClickHouse and MongoDB
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "{{ item.repo }}"
+    filename: "{{ item.filename }}"
+    state: present
+  loop:
+    - repo: "deb [arch=amd64] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse"
+      filename: mongodb
+    - repo: "deb https://repo.yandex.ru/clickhouse/repo-archive/deb/stable/ main/"
+      filename: clickhouse
+
+- name: Update apt cache and install required packages
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - clickhouse-client
+      - mongodb-org-tools
+      - mongodb-org-shell
+      - docker-compose
+      - gcc
+      - python3-pip
+      - jq
+    state: present
+  when: not is_local | bool
+
+# Configure Docker's default address pools to avoid VPN subnet conflicts
+# Ansible will create /etc/docker/daemon.json (and /etc/docker) if needed, and restart Docker only if it changes
+- name: Configure Docker daemon default-address-pools (avoids VPN subnet conflicts)
+  become: true
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    mode: "0644"
+    content: |
+      {
+        "default-address-pools": [
+          { "base": "10.11.0.0/16", "size": 24 }
+        ]
+      }
+  notify: Restart Docker
+  
+# Create the Spectorious log directory
+- name: Create Spectorious log directory
+  become: true
+  ansible.builtin.file:
+    path: /var/log/spectorious
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Install Python requirements
+  become: true
+  ansible.builtin.pip:
+    requirements: "{{ repo_dest }}/requirements.txt"
+    executable: pip3
+  when: not is_local | bool

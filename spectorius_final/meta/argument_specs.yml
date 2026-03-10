@@ -1,0 +1,53 @@
+argument_specs:
+  main:
+    short_description: Deploy Flowsec Spectorious fullstack
+    description:
+      Clone the Spectorious repository, inject credentials into all scripts,
+      compile the flow splitter, provision ClickHouse schema, set up cron jobs,
+      and run first-time initialisation.
+
+    options:
+      Spectorious_branch:
+        description: Git branch to deploy
+        type: str
+        default: "master"
+
+      clickhouse_server:
+        description: ClickHouse host IP or hostname
+        type: str
+        required: true
+
+      clickhouse_password:
+        description: ClickHouse password
+        type: str
+        required: true
+
+      mongodb_server:
+        description: Cloud MongoDB host IP or hostname
+        type: str
+        required: true
+
+      mongodb_password:
+        description: Cloud MongoDB password
+        type: str
+        required: true
+
+      mpop_mongodb_server:
+        description: MPOP MongoDB host IP or hostname
+        type: str
+        required: true
+
+      mpop_mongodb_password:
+        description: MPOP MongoDB password
+        type: str
+        required: true
+
+      license_key:
+        description: License key to activate Spectorious. If provided, the get_license script will run during post-setup. If omitted, the step is skipped.
+        type: str
+        required: false
+
+      MPOP:
+        description: Pass "yes" to enable MPOP deployment mode for cron jobs and watchdog
+        type: str
+        default: "yes"

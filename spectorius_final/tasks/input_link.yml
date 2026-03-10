@@ -1,0 +1,18 @@
+---
+# tasks/input_link.yml
+# Verify the input directory is writable and create the goflow_curr.txt symlink.
+
+- name: Fail if {{ work_dir }}/input is not writable
+  become: true
+  ansible.builtin.shell: test -w "{{ work_dir }}/input/"
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Link goflow_curr.txt to goflow.txt
+  become: true
+  ansible.builtin.file:
+    src: "{{ work_dir }}/input/goflow.txt"
+    dest: "{{ work_dir }}/input/goflow_curr.txt"
+    state: link
+    force: true

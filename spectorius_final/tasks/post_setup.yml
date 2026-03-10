@@ -1,0 +1,58 @@
+---
+# tasks/post_setup.yml
+# First-time initialisation tasks run after the main deployment:
+# seed MongoDB data, install logrotate config, run watchdog and rotate,
+# handle license, and verify the input symlink.
+
+# ── Seed data from MongoDB ────────────────────────────────────────────────────
+- name: Pull all networks from MongoDB (initial seed)
+  become: true
+  ansible.builtin.command: "{{ work_dir }}/{{ get_networks_mdb }} -a ALL -i 10000"
+  changed_when: false
+
+- name: Pull blacklists from MongoDB (initial seed)
+  become: true
+  ansible.builtin.command: "{{ work_dir }}/{{ get_blacklist_mdb }} -i 1000000"
+  changed_when: false
+
+# ── Logrotate ─────────────────────────────────────────────────────────────────
+- name: Install Spectorious logrotate config
+  become: true
+  ansible.builtin.copy:
+    src: "{{ repo_dest }}/{{ rotate_dir }}/{{ torik_rotate }}"
+    dest: /etc/logrotate.d/spectorious
+    owner: root
+    group: root
+    mode: "0644"
+
+# ── Start core scripts ────────────────────────────────────────────────────────
+- name: Run main checker (watchdog)
+  become: true
+  ansible.builtin.command: "{{ work_dir }}/{{ main_checker }} {{ mpop }}"
+  changed_when: false
+  failed_when: false
+
+- name: Run rotate script
+  become: true
+  ansible.builtin.command: "{{ work_dir }}/{{ rotate_dir }}/{{ rotate }}"
+  changed_when: false
+
+# ── License ───────────────────────────────────────────────────────────────────
+- name: Check if license file exists
+  ansible.builtin.stat:
+    path: "{{ work_dir }}/license.txt"
+  register: license_file
+
+- name: Report license file status
+  ansible.builtin.debug:
+    msg: "{{ 'License file found: ' + work_dir + '/license.txt' if license_file.stat.exists else 'WARNING: License file not found at ' + work_dir + '/license.txt' }}"
+
+- name: Run get_license script only if license_key is provided
+  ansible.builtin.command: "{{ work_dir }}/{{ get_license }}"
+  args:
+    chdir: "{{ work_dir }}"
+  environment:
+    LICENSE_KEY: "{{ license_key }}"
+  when: license_key | default('') | length > 0   # will run only when -e "license_key=<your_key>" is provided at runtime
+
+

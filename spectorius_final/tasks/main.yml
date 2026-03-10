@@ -1,0 +1,43 @@
+---
+# tasks/main.yml
+# Orchestrator — imports task files in deployment order.
+
+# 1. Fail fast if required variables or SSH key are missing.
+- name: "Phase 1 | Validate"
+  ansible.builtin.import_tasks: validate.yml
+
+# 2. Add repos, install system packages, configure Docker, create log directory.
+- name: "Phase 2 | Install packages and prepare system"
+  ansible.builtin.import_tasks: install_packages.yml
+
+# 3. Clone or update the Spectorious git repository.
+- name: "Phase 3 | Clone repository"
+  ansible.builtin.import_tasks: clone_repo.yml
+
+# 4. Inject ClickHouse / MongoDB credentials into all scripts.
+- name: "Phase 4 | Configure credentials"
+  ansible.builtin.import_tasks: configure_credentials.yml
+
+# 5. Compile the C splitter, create directories and symlinks.
+- name: "Phase 5 | Build and link"
+  ansible.builtin.import_tasks: build_and_link.yml
+
+# 6. Create the flow2 database, tables, and views in ClickHouse.
+- name: "Phase 6 | ClickHouse schema"
+  ansible.builtin.import_tasks: clickhouse_schema.yml
+
+# 7. Wipe and reinstall all cron jobs.
+- name: "Phase 7 | Cron jobs"
+  ansible.builtin.import_tasks: cron.yml
+
+# 8. Stop all running flow / attack processes (SIGTERM then SIGKILL).
+- name: "Phase 8 | Kill Flow processes"
+  ansible.builtin.import_tasks: kill_processes.yml
+
+# 9. Seed data, logrotate, watchdog, license.
+- name: "Phase 9 | Post setup"
+  ansible.builtin.import_tasks: post_setup.yml
+
+# 10. Verify input dir and create goflow_curr.txt symlink.
+- name: "Phase 10 | Input link"
+  ansible.builtin.import_tasks: input_link.yml

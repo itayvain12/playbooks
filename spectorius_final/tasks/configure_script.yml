@@ -1,0 +1,15 @@
+---
+# tasks/configure_script.yml
+# Called in a loop from configure_credentials.yml.
+# Injects credential key=value pairs into a single script file.
+
+- name: Update credentials in {{ script_item.path | basename }}
+  ansible.builtin.lineinfile:
+    path: "{{ repo_dest }}/{{ script_item.path }}"
+    regexp: "^{{ item.key }}=.*"
+    line: "{{ item.key }}=\"{{ item.value }}\""
+    create: false
+    backup: true
+  loop: "{{ script_item.vars | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"

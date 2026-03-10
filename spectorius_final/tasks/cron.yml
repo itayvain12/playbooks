@@ -1,0 +1,41 @@
+---
+# tasks/cron.yml
+# Wipe the existing crontab and install all Spectorious cron jobs.
+# Job definitions live in vars/cron.yml as {{ spectorious_cron_jobs }}.
+
+- name: Display cron setup message
+  ansible.builtin.debug:
+    msg: "Cron jobs setup..."
+
+- name: Read current crontab
+  ansible.builtin.command: crontab -l
+  register: current_crontab
+  failed_when: false
+  changed_when: false
+
+- name: Save crontab backup to file
+  ansible.builtin.copy:
+    content: "{{ current_crontab.stdout }}"
+    dest: "{{ work_dir }}/crontab.bak"
+    mode: "0644"
+  when: current_crontab.rc == 0
+
+- name: Remove all cron jobs
+  ansible.builtin.command: crontab -r
+  failed_when: false
+  changed_when: true
+
+- name: Install Spectorious cron jobs
+  become: true
+  ansible.builtin.cron:
+    name: "{{ item.name }}"
+    user: root
+    minute: "{{ item.minute }}"
+    hour: "{{ item.hour }}"
+    day: "*"
+    month: "*"
+    weekday: "*"
+    job: "{{ item.job }}"
+  loop: "{{ spectorious_cron_jobs }}"
+  loop_control:
+    label: "{{ item.name }}"

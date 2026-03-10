@@ -1,0 +1,390 @@
+---
+#defaults.yml/main.yml
+# ── Environment ───────────────────────────────────────────────────────────────
+is_local: false          # set to true to skip package install, git clone, and pip install
+
+# ─── License key ──────────────────────────────────────────────────────────────
+license_key: ""
+
+# ─── Deployment mode ──────────────────────────────────────────────────────────
+mpop: "{{ MPOP | default('yes') }}"
+
+# ─── Repository ───────────────────────────────────────────────────────────────
+repo_url: "git@github.com:secunity/spectorious.git"
+repo_dest: /root/work/spectorious
+Spectorious_branch: "master"
+private_key_file: /root/.ssh/id_ed25519
+
+# ─── Directories ──────────────────────────────────────────────────────────────
+base_dir: "/data/spectorious"
+work_dir: "{{ base_dir }}/work"
+log_dir: "/var/log/spectorious"
+var_logs_dir: /var/log/spectorious
+goflow_logs_dir: /mnt/volumes/goflow2_logs/_data
+
+# ─── Script paths ─────────────────────────────────────────────────────────────
+flow_splitter: "flow_splitter/flow_splitter.c"
+
+rt_anomalies: "attacks_rt/anomalies.py"
+rt_anomalies_insert: "attacks_rt/anomalies_insert.py"
+rt_attacks: "attacks_rt/attacks.py"
+rt_attacks_checker: "attacks_rt/attacks_checker.py"
+
+flows_to_db_net_name: "flows_to_db_networks.sh"
+flows_to_db_net: "monitoring/{{ flows_to_db_net_name }}"
+flows_to_db_raw_name: "flows_to_db_raw.sh"
+flows_to_db_raw: "monitoring/{{ flows_to_db_raw_name }}"
+flows_to_db_insert_name: "flows_to_db_insert.py"
+flows_to_db_insert: "monitoring/{{ flows_to_db_insert_name }}"
+
+anomalies_report: "reporting/torik_anomalies.sh"
+
+get_routers_isp: "attacks_cm/get_routers_isp.sh"
+get_networks_thresholds: "attacks_cm/get_networks_thresholds.sh"
+get_license: "attacks_cm/get_license.sh"
+get_networks_mdb: "attacks_cm/get_networks_mdb.sh"
+get_blacklist_mdb: "attacks_cm/get_blacklist_mdb.sh"
+get_incoming_flows: "attacks_cm/get_incoming_flows.sh"
+add_networks: "attacks_cm/add_networks_routers.sh"
+delete_abnormal_rows: "attacks_cm/del_ch_abnormal_rows.sh"
+update_rem_sign: "attacks_cm/update_removed_signatures.sh"
+
+rotate_dir: "rotate"
+rotate: "rotate.sh"
+rotate_backup: "rotate_goflow_backup.sh"
+torik_rotate: "spectorious.txt"
+
+watchdog_dir: "watchdog"
+main_checker: "{{ watchdog_dir }}/main_checker.sh"
+attacks_checker: "attacks_checker.sh"
+splitter_checker: "splitter_checker.sh"
+
+# ─── ClickHouse SQL — Tables ──────────────────────────────────────────────────
+tb_agg_ports: "sqls/tables/tb_flow2_agg_ports.sql"
+tb_host_proto_ports: "sqls/tables/tb_flow2_host_proto_ports.sql"
+tb_hourly_metrics: "sqls/tables/tb_flow2_hourly_metrics.sql"
+tb_isps: "sqls/tables/tb_flow2_isps.sql"
+tb_metrics: "sqls/tables/tb_flow2_metrics.sql"
+tb_metrics_accounts: "sqls/tables/tb_flow2_metrics_accounts.sql"
+tb_metrics_network_1m: "sqls/tables/tb_flow2_metrics_network_1m.sql"
+tb_mssps: "sqls/tables/tb_flow2_mssps.sql"
+tb_sig_agg: "sqls/tables/tb_flow2_sig_aggregation.sql"
+tb_thresholds: "sqls/tables/tb_flow2_thresholds.sql"
+
+flow2_tables:
+  - "{{ work_dir }}/{{ tb_agg_ports }}"
+  - "{{ work_dir }}/{{ tb_host_proto_ports }}"
+  - "{{ work_dir }}/{{ tb_hourly_metrics }}"
+  - "{{ work_dir }}/{{ tb_isps }}"
+  - "{{ work_dir }}/{{ tb_metrics }}"
+  - "{{ work_dir }}/{{ tb_metrics_accounts }}"
+  - "{{ work_dir }}/{{ tb_metrics_network_1m }}"
+  - "{{ work_dir }}/{{ tb_mssps }}"
+  - "{{ work_dir }}/{{ tb_sig_agg }}"
+  - "{{ work_dir }}/{{ tb_thresholds }}"
+
+# ─── ClickHouse SQL — Views ───────────────────────────────────────────────────
+mvw_agg_ports: "sqls/views/mvw_flow2_agg_ports.sql"
+mvw_host_proto_ports: "sqls/views/mvw_flow2_host_proto_ports.sql"
+mvw_metrics_network_1m: "sqls/views/mvw_flow2_metrics_network_1m.sql"
+mvw_sig_agg: "sqls/views/mvw_flow2_sig_aggregation.sql"
+vw_agg_ports_daily: "sqls/views/vw_flow2_agg_ports_daily.sql"
+vw_baseline_0: "sqls/views/vw_flow2_baseline0.sql"
+vw_baseline_1: "sqls/views/vw_flow2_baseline1.sql"
+vw_isps: "sqls/views/vw_flow2_isps.sql"
+vw_attacks: "sqls/views/vw_flow2_attacks.sql"
+
+flow2_views:
+  - "{{ work_dir }}/{{ mvw_agg_ports }}"
+  - "{{ work_dir }}/{{ mvw_host_proto_ports }}"
+  - "{{ work_dir }}/{{ mvw_metrics_network_1m }}"
+  - "{{ work_dir }}/{{ mvw_sig_agg }}"
+  - "{{ work_dir }}/{{ vw_agg_ports_daily }}"
+  - "{{ work_dir }}/{{ vw_baseline_0 }}"
+  - "{{ work_dir }}/{{ vw_baseline_1 }}"
+  - "{{ work_dir }}/{{ vw_isps }}"
+  - "{{ work_dir }}/{{ vw_attacks }}"
+
+# ─── Script credential configs ────────────────────────────────────────────────
+script_configs:
+  - path: "monitoring/flows_to_db_networks.sh"
+    vars:
+      DB_HOST: "{{ clickhouse_server }}"
+      DB_PASS: "{{ clickhouse_password }}"
+
+  - path: "monitoring/flows_to_db_raw.sh"
+    vars:
+      DB_HOST: "{{ clickhouse_server }}"
+      DB_PASS: "{{ clickhouse_password }}"
+
+  - path: "monitoring/flows_to_db_insert.py"
+    vars:
+      DB_HOST: "{{ clickhouse_server }}"
+      DB_PASS: "{{ clickhouse_password }}"
+
+  - path: "attacks_cm/get_routers_isp.sh"
+    vars:
+      DB_HOST: "{{ clickhouse_server }}"
+      DB_PASS: "{{ clickhouse_password }}"
+      MONGO_HOST: "{{ mongodb_server }}"
+      MONGO_PASSWORD: "{{ mongodb_password }}"
+
+  - path: "attacks_cm/add_networks_routers.sh"
+    vars:
+      MONGO_HOST: "{{ mongodb_server }}"
+      MONGO_PASSWORD: "{{ mongodb_password }}"
+      MPOP_MONGO_HOST: "{{ mpop_mongodb_server }}"
+      MPOP_MONGO_PASSWORD: "{{ mpop_mongodb_password }}"
+
+  - path: "attacks_cm/del_ch_abnormal_rows.sh"
+    vars:
+      CLICKHOUSE_HOST: "{{ clickhouse_server }}"
+      CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+
+  - path: "attacks_cm/update_removed_signatures.sh"
+    vars:
+      MONGO_HOST: "{{ mongodb_server }}"
+      MONGO_PASSWORD: "{{ mongodb_password }}"
+
+  - path: "attacks_cm/get_networks_mdb.sh"
+    vars:
+      MONGODB_server: "{{ mongodb_server }}"
+      MONGODB_pass: "{{ mongodb_password }}"
+      DB_HOST: "{{ clickhouse_server }}"
+
+  - path: "attacks_cm/get_license.sh"
+    vars:
+      MONGODB_server: "{{ mongodb_server }}"
+      MONGODB_pass: "{{ mongodb_password }}"
+      DB_HOST: "{{ clickhouse_server }}"
+
+  - path: "attacks_cm/get_blacklist_mdb.sh"
+    vars:
+      MONGODB_server: "{{ mongodb_server }}"
+      MONGODB_pass: "{{ mongodb_password }}"
+
+  - path: "attacks_cm/get_incoming_flows.sh"
+    vars:
+      MONGO_HOST: "{{ mongodb_server }}"
+      MONGO_PASSWORD: "{{ mongodb_password }}"
+      CLICKHOUSE_HOST: "{{ clickhouse_server }}"
+      CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+
+  - path: "attacks_cm/get_networks_thresholds.sh"
+    vars:
+      CLICKHOUSE_HOST: "{{ clickhouse_server }}"
+      CLICKHOUSE_PASSWORD: "{{ clickhouse_password }}"
+      MONGO_HOST: "{{ mongodb_server }}"
+      MONGO_PASSWORD: "{{ mongodb_password }}"
+
+  - path: "attacks_rt/anomalies.py"
+    vars:
+      DB_HOST: "{{ clickhouse_server }}"
+      DB_PASS: "{{ clickhouse_password }}"
+      MDB_HOST: "{{ mpop_mongodb_server }}"
+      MDB_PASS: "{{ mpop_mongodb_password }}"
+      SECUNITY_HOST: "{{ mongodb_server }}"
+      SECUNITY_PASS: "{{ mongodb_password }}"
+
+  - path: "attacks_rt/anomalies_insert.py"
+    vars:
+      MDB_HOST: "{{ mpop_mongodb_server }}"
+      MDB_PASS: "{{ mpop_mongodb_password }}"
+
+  - path: "attacks_rt/attacks.py"
+    vars:
+      DB_HOST: "{{ clickhouse_server }}"
+      DB_PASS: "{{ clickhouse_password }}"
+      MDB_HOST: "{{ mpop_mongodb_server }}"
+      MDB_PASS: "{{ mpop_mongodb_password }}"
+      SECUNITY_HOST: "{{ mongodb_server }}"
+      SECUNITY_PASS: "{{ mongodb_password }}"
+
+  - path: "attacks_rt/attacks_checker.py"
+    vars:
+      DB_HOST: "{{ clickhouse_server }}"
+      DB_PASS: "{{ clickhouse_password }}"
+      MDB_HOST: "{{ mpop_mongodb_server }}"
+      MDB_PASS: "{{ mpop_mongodb_password }}"
+      SECUNITY_HOST: "{{ mongodb_server }}"
+      SECUNITY_PASS: "{{ mongodb_password }}"
+
+# ─── Cron job definitions ─────────────────────────────────────────────────────
+spectorious_cron_jobs:
+
+  # ── Watchdog ──────────────────────────────────────────────────────────────
+  - name: "Main watch-dog script"
+    minute: "*"
+    hour: "*"
+    job: "{{ work_dir }}/{{ main_checker }} {{ mpop }}"
+
+  # ── Log / data rotation ───────────────────────────────────────────────────
+  - name: "Logs and data files rotation"
+    minute: "*/20"
+    hour: "*"
+    job: "{{ work_dir }}/{{ rotate_dir }}/{{ rotate }}"
+
+  - name: "Logs and data files rotation backup"
+    minute: "*"
+    hour: "*"
+    job: "{{ work_dir }}/{{ rotate_dir }}/{{ rotate_backup }} >> {{ log_dir }}/{{ rotate_backup }}.log 2>&1"
+
+  - name: "Force logrotate"
+    minute: "30"
+    hour: "*/2"
+    job: "/usr/sbin/logrotate -f /etc/logrotate.conf"
+
+  # ── MongoDB sync ──────────────────────────────────────────────────────────
+  - name: "Get Networks per Account and Parent Account"
+    minute: "*/10"
+    hour: "*"
+    job: "{{ work_dir }}/{{ get_networks_mdb }} -a ALL"
+
+  - name: "Get Blacklist for filtering"
+    minute: "*/10"
+    hour: "*"
+    job: "{{ work_dir }}/{{ get_blacklist_mdb }}"
+
+  - name: "Get incoming flows for filtering"
+    minute: "*/10"
+    hour: "*"
+    job: "{{ work_dir }}/{{ get_incoming_flows }}"
+
+  # ── Anomaly reports ───────────────────────────────────────────────────────
+  - name: "FS anomalies reports (07-19)"
+    minute: "35"
+    hour: "7-19"
+    job: "{{ work_dir }}/{{ anomalies_report }}"
+
+  - name: "FS anomalies reports (06) arg 12"
+    minute: "35"
+    hour: "6"
+    job: "{{ work_dir }}/{{ anomalies_report }} 12"
+
+  # ── ClickHouse sync ───────────────────────────────────────────────────────
+  - name: "Update ISPs in ClickHouse"
+    minute: "*/30"
+    hour: "*"
+    job: "{{ work_dir }}/{{ get_routers_isp }}"
+
+  - name: "Update Network Thresholds in ClickHouse"
+    minute: "*/30"
+    hour: "*"
+    job: "{{ work_dir }}/{{ get_networks_thresholds }}"
+
+  - name: "Update Routers per Network in MongoDB"
+    minute: "*/15"
+    hour: "*"
+    job: "{{ work_dir }}/{{ add_networks }}"
+
+  - name: "Delete abnormal rows in ClickHouse"
+    minute: "*"
+    hour: "*"
+    job: "{{ work_dir }}/{{ delete_abnormal_rows }} >> {{ log_dir }}/del_ch_abnormal_rows.log 2>&1"
+
+  - name: "Updating removed signatures"
+    minute: "*"
+    hour: "*"
+    job: "{{ work_dir }}/{{ update_rem_sign }} {{ mpop }}"
+
+  # ── Output / working file cleanup ─────────────────────────────────────────
+  - name: "Delete working raw output data older than 5 min"
+    minute: "*"
+    hour: "*"
+    job: "find {{ work_dir }}/output/raw -type f -mmin +5 -exec echo Deleting: {} \\; -exec rm {} \\;"
+
+  - name: "Delete working monitoring output data older than 5 min"
+    minute: "*"
+    hour: "*"
+    job: "find {{ work_dir }}/output/monitor -type f -mmin +5 -exec echo Deleting: {} \\; -exec rm {} \\;"
+
+  - name: "Delete working attacks output data older than 3 min (filter)"
+    minute: "*"
+    hour: "*"
+    job: "find {{ work_dir }}/output/filter -type f -mmin +7 -exec echo Deleting: {} \\; -exec rm {} \\;"
+
+  - name: "Delete working attacks output data older than 3 min (blacklist)"
+    minute: "*"
+    hour: "*"
+    job: "find {{ work_dir }}/output/blacklist -type f -mmin +7 -exec echo Deleting: {} \\; -exec rm -f {} \\;"
+
+  # ── Backup file cleanup ───────────────────────────────────────────────────
+  - name: "Delete backup output data older than 1, 7 and 21 days"
+    minute: "0"
+    hour: "11"
+    job: >-
+      bash -lc 'ls -1 /data/spectorious/backup/json/anomalies/done
+      | head -n -144
+      | xargs -t -I {} rm -fr /data/spectorious/backup/json/anomalies/done/{}'
+
+  - name: "Delete backup raw output data older than 2 days"
+    minute: "0"
+    hour: "10"
+    job: "find /data/spectorious/backup/csv/raw -mindepth 1 -maxdepth 3 -type d -mtime +2 -exec rm -rf {} \\;"
+
+  - name: "Delete backup filter output data older than 7 days"
+    minute: "0"
+    hour: "10"
+    job: "find /data/spectorious/backup/csv/filter -mindepth 1 -maxdepth 3 -type d -mtime +7 -exec rm -rf {} \\;"
+
+  - name: "Delete backup blacklist output data older than 7 days"
+    minute: "0"
+    hour: "10"
+    job: "find /data/spectorious/backup/csv/blacklist -mindepth 1 -maxdepth 3 -type d -mtime +7 -exec rm -rf {} \\;"
+
+  # ── Broken file cleanup ───────────────────────────────────────────────────
+  - name: "Delete broken input data files"
+    minute: "*"
+    hour: "*"
+    job: >-
+      bash -lc 'ls {{ work_dir }}/input/goflow.txt*.backup
+      | xargs -t -I : bash -c "rm -f :"'
+
+  - name: "Delete broken output raw data files"
+    minute: "*/10"
+    hour: "*"
+    job: >-
+      bash -lc 'ls {{ work_dir }}/output/raw
+      | grep "\.csv\.csv"
+      | xargs -t -P 2 -I {} rm -f {{ work_dir }}/output/raw/{}'
+
+  # ── Housekeeping ──────────────────────────────────────────────────────────
+  - name: "Moving output backup attack files to time-based folders"
+    minute: "*/5"
+    hour: "*"
+    job: >-
+      bash -lc 'cd "/data/spectorious/backup/csv/filter";
+      ls -pA | grep -v "/"
+      | awk -F"_" -v ddd=. '"'"'{d=substr($4,1,3);print "mkdir -p "ddd"/"$3"_"d"; mv "ddd"/"$0" "ddd"/"$3"_"d}'"'"'
+      | xargs -P 2 -t -I {} bash -c "{}"'
+
+  - name: "Backup of older networks per account filter files"
+    minute: "35"
+    hour: "6"
+    job: >-
+      bash -lc 'ls {{ work_dir }}/ | grep "filter.csv.~"
+      | xargs -t -I {} mv {{ work_dir }}/{} {{ work_dir }}/filter_dir/'
+
+  - name: "Delete some old backup per ClickHouse DB cache files"
+    minute: "30"
+    hour: "*"
+    job: >-
+      bash -lc 'ls -1tr {{ work_dir }}/dbcache/* | head -n -10 | xargs -r rm --'
+
+  - name: "Delete some old backup networks per account filter files"
+    minute: "30"
+    hour: "*"
+    job: >-
+      bash -lc 'ls -1tr {{ work_dir }}/filter_dir/* | head -n -10 | xargs -r rm --'
+
+  - name: "Delete some old backup black_list.csv.~ files"
+    minute: "32"
+    hour: "*"
+    job: >-
+      bash -lc 'ls -1tr {{ work_dir }} | grep "black_list.csv.~" | head -n -10 | xargs -r rm --'
+
+  - name: "Delete some old backup ANOMALY_ files"
+    minute: "34"
+    hour: "*"
+    job: >-
+      bash -lc 'ls -1tr {{ work_dir }} | grep "ANOMALY_" | head -n -2 | xargs -r rm --'

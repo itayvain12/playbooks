@@ -1,0 +1,48 @@
+---
+# tasks/kill_processes.yml
+# Stop all running Spectorious / flow processes before starting fresh ones.
+
+- name: Kill Flow processes (SIGTERM)
+  become: true
+  ansible.builtin.shell: >
+    pgrep -f "{{ item }}" | grep -v $$ | xargs -r kill -15 || true
+  args:
+    executable: /bin/bash
+  loop:
+    - "{{ work_dir }}/{{ flows_to_db_net }}"
+    - "{{ work_dir }}/{{ flows_to_db_raw }}"
+    - "{{ attacks_checker }}"
+    - "{{ splitter_checker }}"
+    - "{{ rotate_backup }}"
+  changed_when: false
+
+- name: Kill attacks_rt processes (SIGKILL)
+  become: true
+  ansible.builtin.shell: |
+    pgrep -f "attacks_rt" | grep -v $$ | xargs -r -t -I {} kill -9 {} || true
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Kill flows_to_db_insert processes (SIGKILL)
+  become: true
+  ansible.builtin.shell: |
+    pgrep -f "flows_to_db_insert" | grep -v $$ | xargs -r -t -I {} kill -9 {} || true
+  args:
+    executable: /bin/bash
+  changed_when: false
+
+- name: Kill flow processes owned by root, excluding setup and goflow2 (SIGKILL)
+  become: true
+  ansible.builtin.shell: |
+    ps -fe \
+      | grep flow \
+      | grep -v grep \
+      | grep -v setup \
+      | grep -v goflow2 \
+      | grep root \
+      | awk '{print $2}' \
+      | xargs -r -t -I {} kill -9 {}
+  args:
+    executable: /bin/bash
+  changed_when: false

@@ -1,0 +1,57 @@
+---
+# tasks/build_and_link.yml
+# Compile the C flow splitter, create required directories, and set up symlinks.
+
+- name: Compile flow_splitter.c → flow_split binary
+  ansible.builtin.command: >
+    gcc -fPIC -mcmodel=large -o flow_split {{ flow_splitter }}
+  args:
+    chdir: "{{ repo_dest }}"
+
+- name: Create base backup directories
+  ansible.builtin.file:
+    path: "{{ base_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - backup/csv/raw
+    - backup/csv/filter
+  loop_control:
+    label: "{{ base_dir }}/{{ item }}"  
+
+# Remove before re-creating to ensure a clean symlink even if the path was
+# previously a real directory or a dangling link.
+- name: Remove existing work path (file / dir / stale link) "{{ work_dir }}"
+  ansible.builtin.file:
+    path: "{{ work_dir }}"
+    state: absent
+
+- name: Create work symlink  {{ repo_dest }} → {{ work_dir }}
+  ansible.builtin.file:
+    src: "{{ repo_dest }}"
+    dest: "{{ work_dir }}"
+    state: link
+
+- name: Remove existing input (symlink / path) "{{ work_dir }}/input"
+  ansible.builtin.file:
+    path: "{{ work_dir }}/input"
+    state: absent
+
+- name: Create input symlink  {{ work_dir }}/input → goflow2 log volume
+  ansible.builtin.file:
+    src: "/mnt/volumes/goflow2_logs/_data"
+    dest: "{{ work_dir }}/input"
+    state: link
+  ignore_errors: true   # volume may not be mounted on first run in some envs
+
+- name: Create runtime directories (output / dbcache / filter_dir)
+  ansible.builtin.file:
+    path: "{{ work_dir }}/{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - output
+    - dbcache
+    - filter_dir
+  loop_control:
+    label: "{{ work_dir }}/{{ item }}"
